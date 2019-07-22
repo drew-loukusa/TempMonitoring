@@ -5,6 +5,13 @@ import argparse
 
 #TODO:
 #==============================================================================#
+
+# The next thing to add:
+
+# ---> Sending the data update frequency to the Arduino from the script itself.
+
+
+
 # I should change it so that I have the python script send the data update frequency it 
 # expects to the Arduino.
 
@@ -78,6 +85,8 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
     print("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")   
     
     # Get the data update frequency from the Arduino: 
+    # This will be inverted soon:
+    # will send udpate freq to the arduino:
     interval = None
     while 1:
         data = get_data(ser)
@@ -100,7 +109,14 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
             time.sleep(interval)            
 
             cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")        
-            cur_line = get_data(ser)
+            cur_line = get_data(ser)            
+
+            # Occasionally, the script will read before the data is sent
+            # by the Arduino. If this happens then we just wait a tiny bit,
+            # then read again:
+            if cur_line == "":
+                time.sleep(0.05)
+                cur_line = get_data(ser)
 
             print(cur_time + "\t" + cur_line)          
         except:
