@@ -8,7 +8,13 @@ import argparse
 
 # The next thing to add:
 
-# ---> Sending the data update frequency to the Arduino from the script itself.
+# Finish the -o flag for saving the data to a file
+        # > I think still having the header info on the command line while 
+        #   it outputs to a file would be good. With a note saying as such
+        #   and a blinking ellipse to show that it's running 
+        #   and how much time is left if the -tl flag was used
+# Add a flag which controls how long the script will run. -tl 
+# 
 
 
 
@@ -31,6 +37,7 @@ PORT = "COM5"
 BAUDRATE = 9600 
 TIMEOUT = 300 # Seconds
 UPDATE_FREQUENCY = 30 # Seconds
+FILE_NAME = None
 
 # ARGS:
 #==============================================================================#
@@ -56,11 +63,21 @@ add('-uf',  dest    = 'update_freq',
                         less than 3 seconds since values from the sensor can be\
                         up to 2 seconds old.")
 
+add('-f',   dest    = 'file_name', 
+            default = FILE_NAME,
+            help    = "Save output to a file named FILE_NAME")
+
 args = p.parse_args()
 
 # Main:
 #==============================================================================#
-def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQUENCY):
+def main(   
+            port=PORT, 
+            baudrate=BAUDRATE, 
+            timeout=TIMEOUT,             
+            update_freq=UPDATE_FREQUENCY, 
+            file_name=FILE_NAME
+        ):
     
     timeout     = float(timeout)
     update_freq = float(update_freq)
@@ -99,13 +116,18 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
     data = str(update_freq)+"$"
     ser.write(data.encode('utf-8'))       
 
+    # Setup stream object:
+    stream = None
+    if file_name: stream = Stream(fname=file_name, mode='f')
+    else:         stream = Stream(mode='p')
+
     # Emit Title, Parameters and Column Labels: 
     #----------------------------------------------------------------------------#
-    print("AM2302 Humidity - Temperature Sensor")
-    print("Port: {}\tBaudrate: {}\t\tUpdate Freq (Sec): {}\tTimeout (Sec):{}"
+    stream.write("AM2302 Humidity - Temperature Sensor")
+    stream.write("Port: {}\tBaudrate: {}\t\tUpdate Freq (Sec): {}\tTimeout (Sec):{}"
                                 .format(port, baudrate,update_freq, timeout))
-    print("-"*81)
-    print("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")      
+    stream.write("-"*81)
+    stream.write("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")      
 
     # Wait for data on the serial port, then print it out as it's recieved:
     #----------------------------------------------------------------------------#
@@ -122,42 +144,47 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
                 time.sleep(0.05)
                 cur_line = get_data(ser)
 
-            print(cur_time + "\t" + cur_line)  
+            stream.write(cur_time + "\t" + cur_line)  
 
             # The Arduino is set to send data every update_freq seconds, 
             # so wait that long between reading data:
             time.sleep(update_freq)                        
         except KeyboardInterrupt:            
             loop = False
+            stream.close()
         except:
             print('Data could not be read') 
-
-def emit_output(*strings, mode):
-    # Build string to be emitted:
-    outtext = ""
-    for string in in strings:
-        outtext += string 
-
-    if mode = 1:
-        print(outtext)
-
-    if mode = 0;
-        pass
-
-    # okay so either I need to add a conditional to the main() that either DOES or does not 
-    # create and opens a file object, which can then be passed into this function...
-
-    # OR
-
-    # I reopen the file  inside this function each time I want to write data out.
-
-    # The first option  is better from a memory and efficieny stand point, the second
-    # will make for a cleaner main(). For this purpose it doesn't really matter, but it's 
-    # always good to keep these things in mind.
-
 
 def get_data(ser):
     return ser.readline().decode("utf-8").rstrip('\n')
 
+class Stream:
+    def __init__(self, fname=None, mode='p'):
+        ''' p = print mode
+            f = file mode '''
+        self.mode = mode    
+        self.file = None 
+
+        if self.mode not in ['p', 'f']: 
+            raise Exception("Mode must be 'p' (print mode) or 'f' (file mode) ")
+
+        if self.mode == 'f':            
+            self.file = open(fname,'w+')
+
+
+    def write(self, *strings):
+        # Build string to be emitted:
+        outtext = ""
+        for string in strings:
+            outtext += string 
+
+        if self.mode == 'p':
+            print(outtext)
+        if self.mode == 'f':
+            self.file.write(outtext)
+
+    def close(self):
+        self.file.close()
+
 if __name__ == "__main__":
-    main(args.port, args.baudrate, args.timeout, args.update_freq)
+    main(args.port, args.baudrate, args.timeout, args.update_freq, args.file_name)
