@@ -12,3 +12,7 @@ If you have a AM2302, just make sure that you hookup the '+' to the 5V and the '
 More info to come on how the script works...
 
 ![Image description](https://github.com/drew-loukusa/TempMonitoring/blob/master/WiringDiagram.JPG)
+
+Credit to cactus.io for the Arduino sketch that I modified/used as a starting place:
+For details on how to hookup the DHT22 sensor to the Arduino then checkout this page
+http://cactus.io/hookups/sensors/temperature-humidity/am2302/hookup-arduino-to-am2302-temp-humidity-sensor
