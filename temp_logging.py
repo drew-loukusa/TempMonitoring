@@ -65,48 +65,53 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
     timeout     = float(timeout)
     update_freq = float(update_freq)
 
-    # Quit if timeout is less than the update freq 
+    # Quit if timeout is less than the update freq:
+    #----------------------------------------------------------------------------#
     if timeout <= update_freq: 
         print("ERROR: Timeout was set to a value less than the update frequency")
         quit()
 
     # Open the port:
+    #----------------------------------------------------------------------------#
     try:
-        ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout, write_timeout=5)
+        ser = serial.Serial(port=port, 
+                            baudrate=baudrate, 
+                            timeout=timeout, 
+                            write_timeout=5)
+
     except serial.serialutil.SerialException as e:
         print(e)
         quit()
 
 
-    # Transmit the update frequency to the Arduino:    
-    # Wait 2 seconds for the Arduino to setup:
-    time.sleep(2)      
-    for i in range(3):
-        try:             
-            data = str(update_freq)+"$"
-            ser.write(data.encode('utf-8'))
-            break
-        except Exception as e:
-            print(e)
-            print("Failed to send update frequency to Arduino. ")
-            print("Retrying again in 5 seconds...")
-            time.sleep(5)
-    else:
-        print("Could not write to the Arduino after multiple attempts. Exiting program.")
-        quit()
+    # Transmit the update frequency to the Arduino:       
+    #----------------------------------------------------------------------------#    
+   
+    time.sleep(2) # Wait 2 seconds for the Arduino to setup.
+
+    # I haven't figured out why yet, but the program freezes if you don't wait 
+    # for the Arduino to get started. I think the write() call gets stuck because 
+    # the port hasn't been opened yet by the Arduino? I tried setting write_timeout
+    # for the Serial object but that didn't seem to help.
+
+    # In any case, this works. I'll have to look into this more.
+
+    data = str(update_freq)+"$"
+    ser.write(data.encode('utf-8'))       
 
     # Emit Title, Parameters and Column Labels: 
+    #----------------------------------------------------------------------------#
     print("AM2302 Humidity - Temperature Sensor")
     print("Port: {}\tBaudrate: {}\t\tUpdate Freq (Sec): {}\tTimeout (Sec):{}"
                                 .format(port, baudrate,update_freq, timeout))
     print("-"*81)
     print("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")      
 
-    # Wait for data on the serial port, then print it out:
+    # Wait for data on the serial port, then print it out as it's recieved:
+    #----------------------------------------------------------------------------#
     loop = True
     while loop:
-        try:
-            time.sleep(0.05)
+        try:          
             cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")        
             cur_line = get_data(ser)            
 
@@ -121,10 +126,35 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
 
             # The Arduino is set to send data every update_freq seconds, 
             # so wait that long between reading data:
-            time.sleep(update_freq)                
-        except:
-            print('Data could not be read or Keyboard Interrupt') 
+            time.sleep(update_freq)                        
+        except KeyboardInterrupt:            
             loop = False
+        except:
+            print('Data could not be read') 
+
+def emit_output(*strings, mode):
+    # Build string to be emitted:
+    outtext = ""
+    for string in in strings:
+        outtext += string 
+
+    if mode = 1:
+        print(outtext)
+
+    if mode = 0;
+        pass
+
+    # okay so either I need to add a conditional to the main() that either DOES or does not 
+    # create and opens a file object, which can then be passed into this function...
+
+    # OR
+
+    # I reopen the file  inside this function each time I want to write data out.
+
+    # The first option  is better from a memory and efficieny stand point, the second
+    # will make for a cleaner main(). For this purpose it doesn't really matter, but it's 
+    # always good to keep these things in mind.
+
 
 def get_data(ser):
     return ser.readline().decode("utf-8").rstrip('\n')
