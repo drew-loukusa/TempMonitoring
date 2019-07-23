@@ -18,10 +18,16 @@ AM2302 dht(AM2302_PIN);
 // Arduino boards that run at 84MHz the value of 30 should be about right.
 int interval;
 void setup() {  
-  Serial.begin(9600); 
-  interval = 30000; 
-  String header = "INTERVAL\t" + String(interval);
-  Serial.println(header);
+  Serial.begin(9600);   
+
+  String readString;
+  // Get the update frequency from the python script:   
+  //Serial.print("Waiting for update frequency to be sent...");
+  while (!Serial.available()) {} // wait for data to arrive
+  interval = Serial.readStringUntil('$').toInt()*1000;
+  //Serial.print("GOT INTERVAL (milliseconds): ");
+  //Serial.println(interval);
+  
   dht.begin();
 }
 

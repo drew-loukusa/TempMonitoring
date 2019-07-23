@@ -72,9 +72,27 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
 
     # Open the port:
     try:
-        ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+        ser = serial.Serial(port=port, baudrate=baudrate, timeout=timeout, write_timeout=5)
     except serial.serialutil.SerialException as e:
         print(e)
+        quit()
+
+
+    # Transmit the update frequency to the Arduino:    
+    # Wait 2 seconds for the Arduino to setup:
+    time.sleep(2)      
+    for i in range(3):
+        try:             
+            data = str(update_freq)+"$"
+            ser.write(data.encode('utf-8'))
+            break
+        except Exception as e:
+            print(e)
+            print("Failed to send update frequency to Arduino. ")
+            print("Retrying again in 5 seconds...")
+            time.sleep(5)
+    else:
+        print("Could not write to the Arduino after multiple attempts. Exiting program.")
         quit()
 
     # Emit Title, Parameters and Column Labels: 
@@ -82,32 +100,13 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
     print("Port: {}\tBaudrate: {}\t\tUpdate Freq (Sec): {}\tTimeout (Sec):{}"
                                 .format(port, baudrate,update_freq, timeout))
     print("-"*81)
-    print("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")   
-    
-    # Get the data update frequency from the Arduino: 
-    # This will be inverted soon:
-    # will send udpate freq to the arduino:
-    interval = None
-    while 1:
-        data = get_data(ser)
-        data = data.split('\t')
-
-        if len(data) > 1:
-            #print("data",data)
-            interval = int(data[1])/1000
-            break
-
-        time.sleep(1)
-
+    print("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")      
 
     # Wait for data on the serial port, then print it out:
     loop = True
     while loop:
         try:
-            # The Arduino is set to send data every INTERVAL seconds, 
-            # so wait that long between reading data:
-            time.sleep(interval)            
-
+            time.sleep(0.05)
             cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")        
             cur_line = get_data(ser)            
 
@@ -118,7 +117,11 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, update_freq=UPDATE_FREQU
                 time.sleep(0.05)
                 cur_line = get_data(ser)
 
-            print(cur_time + "\t" + cur_line)          
+            print(cur_time + "\t" + cur_line)  
+
+            # The Arduino is set to send data every update_freq seconds, 
+            # so wait that long between reading data:
+            time.sleep(update_freq)                
         except:
             print('Data could not be read or Keyboard Interrupt') 
             loop = False
@@ -127,4 +130,4 @@ def get_data(ser):
     return ser.readline().decode("utf-8").rstrip('\n')
 
 if __name__ == "__main__":
-    main(args.port, args.baudrate, args.timeout)
+    main(args.port, args.baudrate, args.timeout, args.update_freq)
