@@ -1,7 +1,23 @@
+#!/usr/bin/env python
+
+"""
+This is the Python script part of my TempMonitoring project (github.com/drew-loukusa/TempMonitoring)
+which pairs with an Arduino to monitor the temperature of a room.
+
+This script sends startup parameters to and recieves data from the Arduino.
+This script has a number of command line flags which can be used to modify it's behavior, 
+run the script with the -h flag to see all of the available flags.
+"""
+
 import time
 import serial
 import datetime 
 import argparse 
+
+__author__ = "Drew Loukusa"
+__copyright__ = "Copyright 2019, Drew Loukusa"
+__license__ = "GNU General Public License v3.0"
+__status__ = "Prototype"
 
 # DEFAULTS:
 #==============================================================================#
