@@ -14,10 +14,10 @@ import serial
 import datetime 
 import argparse 
 
-__author__ = "Drew Loukusa"
-__copyright__ = "Copyright 2019, Drew Loukusa"
-__license__ = "GNU General Public License v3.0"
-__status__ = "Prototype"
+__author__      = "Drew Loukusa"
+__copyright__   = "Copyright 2019, Drew Loukusa"
+__license__     = "GNU General Public License v3.0"
+__status__      = "Prototype"
 
 # DEFAULTS:
 #==============================================================================#
