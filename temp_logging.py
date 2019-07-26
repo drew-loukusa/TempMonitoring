@@ -3,33 +3,6 @@ import serial
 import datetime 
 import argparse 
 
-#TODO:
-#==============================================================================#
-
-# The next thing to add:
-
-# Finish the -o flag for saving the data to a file
-        # > I think still having the header info on the command line while 
-        #   it outputs to a file would be good. With a note saying as such
-        #   and a blinking ellipse to show that it's running 
-        #   and how much time is left if the -tl flag was used
-# Add a flag which controls how long the script will run. -tl 
-# 
-
-
-
-# I should change it so that I have the python script send the data update frequency it 
-# expects to the Arduino.
-
-# The Arduino would have to wait for an initial message, then start sending data.
-
-# That would actually be the way to do it. 
-
-# You could have a number of options that you could set here in the script,
-# or even better, with command line flags, that then get sent to the Arduino.
-
-# You could have it change: what data gets recorded, format, etc etc. 
-
 # DEFAULTS:
 #==============================================================================#
 #The following line is for serial over GPIO:
