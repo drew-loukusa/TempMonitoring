@@ -66,7 +66,7 @@ args = p.parse_args()
 
 # Main:
 #==============================================================================#
-def main(   
+def monitor_temperature(   
             port=PORT, 
             baudrate=BAUDRATE, 
             timeout=TIMEOUT,             
@@ -98,6 +98,10 @@ def main(
     except serial.serialutil.SerialException as e:
         print(e)
         quit()
+
+
+    def get_data():
+        return ser.readline().decode("utf-8").rstrip('\n')
 
 
     # Transmit the update frequency to the Arduino:       
@@ -150,14 +154,14 @@ def main(
         elif time_ran % update_freq == 0:
             try:          
                 cur_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")        
-                cur_line = get_data(ser)            
+                cur_line = get_data()            
 
                 # Occasionally, the script will read before the data is sent
                 # by the Arduino. If this happens then we just wait a tiny bit,
                 # then read again:
                 if cur_line == "":
                     time.sleep(0.05)
-                    cur_line = get_data(ser)
+                    cur_line = get_data()
                     time_ran += 0.05
 
                 stream.write(cur_time + "\t" + cur_line)  
@@ -169,9 +173,6 @@ def main(
 
         time.sleep(1)          
         time_ran += 1 
-
-def get_data(ser):
-    return ser.readline().decode("utf-8").rstrip('\n')
 
 class Stream:
     """ Allows an object to be created that will either send output to standard out or to a file
@@ -214,7 +215,7 @@ class Stream:
     
 
 if __name__ == "__main__":
-    main(
+    monitor_temperature(
             args.port, 
             args.baudrate,
             args.timeout, 
