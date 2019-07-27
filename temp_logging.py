@@ -116,6 +116,7 @@ def monitor_temperature(
 
     # In any case, this works. I'll have to look into this more.
 
+    # Send the update frequency to the Arduino:
     data = str(update_freq)+"$"
     ser.write(data.encode('utf-8'))       
 
@@ -126,25 +127,26 @@ def monitor_temperature(
 
     # Emit Title, Parameters and Column Labels: 
     #----------------------------------------------------------------------------#
-    stream.write("\nAM2302 Humidity - Temperature Sensor")
-    stream.write("-"*81)
-    stream.write("Port: {}\t\tBaudrate: {}\t\t\tUpdate Freq (Sec): {}"
+    stream.write("\nAM2302 Humidity - Temperature Sensor\n")
+    stream.write("-"*81+"\n")
+    stream.write("Port: {}\t\tBaudrate: {}\t\t\tUpdate Freq (Sec): {}\n"
                                 .format(port, baudrate,update_freq))
 
-    stream.write("Timeout (Sec): {}\tTime Limit (Sec): {}"
+    stream.write("Timeout (Sec): {}\tTime Limit (Sec): {}\n"
                                 .format(timeout, time_limit))
-    stream.write("-"*81)
-    stream.write("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)")      
+    stream.write("-"*81+"\n")
+    stream.write("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)\n")      
 
     # Wait for data on the serial port, then print it out as it's recieved:
     #----------------------------------------------------------------------------#
     loop = True
     time_ran = 0
+    
     # This loop does "stuff" and then waits 1 second before doing it again.
     # It uses modulo arithmatic to check if it's time to get and emit data.
     # This is so that the script can check how long it's been running and quit on time.
+    
     while loop:
-
         # If a time limit was set, check if it's time to quit:
         if time_limit != "Not Set" and time_ran >= time_limit:
             loop = False
@@ -208,7 +210,7 @@ class Stream:
             outtext += string 
 
         if self.mode == 'p':
-            print(outtext)
+            print(outtext.rstrip('\n'))
         if self.mode == 'f':
             self.file.write(outtext)
 
