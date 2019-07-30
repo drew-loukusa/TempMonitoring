@@ -8,7 +8,7 @@ This script sends startup parameters to and recieves data from the Arduino.
 This script has a number of command line flags which can be used to modify it's behavior, 
 run the script with the -h flag to see all of the available flags.
 """
-
+import os
 import time
 import serial
 import datetime 
@@ -62,6 +62,17 @@ add('-tl',  dest    = 'time_limit',
             default = TIME_LIMIT,
             help    = "(Seconds) Set how long the script should run")
 
+
+add('-sl',  dest    = 'single_line', 
+            action  = 'store_true',
+            help    = "Instead of writing each update as it's own line (logging style) \
+                        display each update on the same line, overwriting the last")
+
+add('--pretty', dest    = 'pretty', 
+                action  = 'store_true',
+                help    = "Hides the startup parameters, except for time_limit and update frequency\
+                            set and also has a pretty header and other stuff. AND COLORS")
+
 args = p.parse_args()
 
 # Main:
@@ -73,8 +84,18 @@ def monitor_temperature(
             update_freq=UPDATE_FREQUENCY, 
             file_name=FILE_NAME,
             time_limit=TIME_LIMIT,
+            single_line=False,
+            pretty_mode=False,
         ):
     
+    # Clear the screen:
+    from sys import platform
+    if platform == "linux" or platform == "linux2":
+        os.system('clear')
+    elif platform == "win32":
+        os.system('cls')
+
+
     # Convert values as necessary:
     timeout     = float(timeout)    
     update_freq = float(update_freq)
@@ -127,15 +148,43 @@ def monitor_temperature(
 
     # Emit Title, Parameters and Column Labels: 
     #----------------------------------------------------------------------------#
-    stream.write("\nAM2302 Humidity - Temperature Sensor\n")
-    stream.write("-"*81+"\n")
-    stream.write("Port: {}\t\tBaudrate: {}\t\t\tUpdate Freq (Sec): {}\n"
-                                .format(port, baudrate,update_freq))
+    #┌ ┐ └ ┘
+    header = [
+        "AM2302 Humidity - Temperature Sensor",
+        "DIV"+"-"*81,
+        "Port: {}\t\tBaudrate: {}\t\t\tUpdate Freq (Sec): {}"
+                                    .format(port, baudrate,update_freq),
+        "Timeout (Sec): {}\tTime Limit (Sec): {}"
+                                    .format(timeout, time_limit),
+        "DIV"+"-"*81,
+        "Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)",
+    ]
 
-    stream.write("Timeout (Sec): {}\tTime Limit (Sec): {}\n"
-                                .format(timeout, time_limit))
-    stream.write("-"*81+"\n")
-    stream.write("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)\n")      
+    if pretty_mode:
+         header = [
+            "{:^76s}".format("AM2302 Humidity - Temperature Sensor"),
+            "DIV"+"-"*78,
+            "Port: {}\t\tBaudrate: {}\t\tUpdate Freq (Sec): {}"
+                                        .format(port, baudrate,update_freq),
+            "Timeout (Sec): {}\tTime Limit (Sec): {}"
+                                        .format(timeout, time_limit),
+            "DIV"+"-"*78,
+            "Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)",
+        ]
+
+    if pretty_mode: stream.write("┌"+"-"*78+"┐")
+
+    for line in header: 
+        
+        if pretty_mode: 
+            if line[0:3] == "DIV":
+                line = "+" + line[3:] + "+"
+            else: 
+                line = "| " + line + "{:>80}".format("|")
+
+        stream.write(line)
+
+    if pretty_mode: stream.write("+"+"-"*78+"+")
 
     # Wait for data on the serial port, then print it out as it's recieved:
     #----------------------------------------------------------------------------#
@@ -146,11 +195,13 @@ def monitor_temperature(
     # It uses modulo arithmatic to check if it's time to get and emit data.
     # This is so that the script can check how long it's been running and quit on time.
     
+    cur_data = ""
     while loop:
         # If a time limit was set, check if it's time to quit:
         if time_limit != "Not Set" and time_ran >= time_limit:
             loop = False
             continue
+
 
         # Check if we should get and emit data:
         elif time_ran % update_freq == 0:
@@ -166,14 +217,27 @@ def monitor_temperature(
                     cur_line = get_data()
                     time_ran += 0.05
 
-                stream.write(cur_time + "\t" + cur_line)  
+                # if single_line:                   
+                #     print("\033[%d;%dH" % (7, 0))
+                cur_data = cur_time + "\t" + cur_line
+                if not single_line: 
+                    stream.write(cur_time + "\t" + cur_line)
                              
             except KeyboardInterrupt:            
-                loop = False            
+                loop = False   
+                continue         
             except:
                 print('Data could not be read') 
 
-        time.sleep(1)          
+        if single_line:
+            print("\033[%d;%dH" % (4, 0))
+            stream.write("Timeout (Sec): {}\tTime Limit (Sec): {}\t\tTime Ran (Sec): {}\n"
+                        .format(timeout, time_limit, time_ran))
+            stream.write("-"*81+"\n")
+            stream.write("Time\t\t\tRH\t \tTemp (F)\tHeat Index (F)\n")      
+            stream.write(cur_data)  
+
+        time.sleep(1)                  
         time_ran += 1 
 
 class Stream:
@@ -211,8 +275,11 @@ class Stream:
 
         if self.mode == 'p':
             print(outtext.rstrip('\n'))
-        if self.mode == 'f':
+        elif self.mode == 'f':
             self.file.write(outtext)
+        elif self.mode == 'pf':
+            self.file.write(outtext)
+            print(outtext.rstrip('\n'))
 
     
 
@@ -224,4 +291,6 @@ if __name__ == "__main__":
             args.update_freq, 
             args.file_name,
             args.time_limit,
+            args.single_line,
+            args.pretty,
         )
